@@ -271,12 +271,14 @@ namespace Darkride.Exporter
                 { "type", e.Type },
                 { "name", e.Name },
             };
+            // in the entity format, position and rotation are relative to the parent when there is one (the engine's
+            // own export writes them so, and its import ignores localPosition and localRotation)
             if (e.Parent != null)
             {
                 p["parentID"] = e.Parent.Id;
                 var inverse = Quaternion.Inverse(e.Parent.Rotation);
-                p["localPosition"] = inverse * (e.Position - e.Parent.Position);
-                p["localRotation"] = inverse * e.Rotation;
+                p["position"] = inverse * (e.Position - e.Parent.Position);
+                p["rotation"] = inverse * e.Rotation;
             }
             else
             {

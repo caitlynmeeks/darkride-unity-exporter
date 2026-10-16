@@ -51,7 +51,7 @@ darkride client on the same machine.
   sphere, Capsule → capsule-y, none → none and collisionless), `userData.lightmap` = `{ url, scaleOffset,
   directionalUrl, mode: "indirect" }` when it is lightmapped.
 - Parents of exported things become **Empty** entities (an invisible, collisionless 0.2 m cube, as the editor's
-  Create > Empty) so a prefab instance moves as one; children use `parentID` and local transforms. *Keep
+  Create > Empty) so a prefab instance moves as one; children use `parentID` with `position` and `rotation` relative to the parent. *Keep
   hierarchy* off exports everything flat.
 - **Baked** lights are in the lightmaps and are only listed in the report. **Mixed** and **Realtime** point and
   spot lights become Light entities (intensity as in Unity, not yet calibrated); a Mixed or Realtime directional
