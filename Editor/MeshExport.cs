@@ -41,9 +41,11 @@ namespace Darkride.Exporter
         {
             var key = new StringBuilder(e.Mesh.GetInstanceID().ToString());
             foreach (var material in e.Materials) key.Append('|').Append(material != null ? material.GetInstanceID() : 0);
+            bool mirrored = e.Mirror != Vector3.one;
+            if (mirrored) key.Append("|mirror").Append(e.Mirror.x).Append(e.Mirror.y).Append(e.Mirror.z);
             if (files.TryGetValue(key.ToString(), out string existing)) return existing;
 
-            string baseName = BaseName(e.Mesh);
+            string baseName = BaseName(e.Mesh) + (mirrored ? "-mirrored" : "");
             string name = baseName;
             for (int i = 2; usedFiles.Contains(name); i++) name = baseName + "-" + i;
             usedFiles.Add(name);
@@ -68,9 +70,10 @@ namespace Darkride.Exporter
         {
             var go = new GameObject(name);
             go.hideFlags = HideFlags.HideAndDontSave;
+            Mesh mirroredMesh = e.Mirror != Vector3.one ? Mirrored(e.Mesh, e.Mirror) : null;
             try
             {
-                go.AddComponent<MeshFilter>().sharedMesh = e.Mesh;
+                go.AddComponent<MeshFilter>().sharedMesh = mirroredMesh != null ? mirroredMesh : e.Mesh;
                 var renderer = go.AddComponent<MeshRenderer>();
                 renderer.sharedMaterials = e.Materials;
 
@@ -114,7 +117,50 @@ namespace Darkride.Exporter
             finally
             {
                 UnityEngine.Object.DestroyImmediate(go);
+                if (mirroredMesh != null) UnityEngine.Object.DestroyImmediate(mirroredMesh);
             }
+        }
+
+        // The mesh as Unity shows it under a negative scale: positions, normals and tangents flipped on those axes,
+        // the winding reversed when the flips mirror (an odd number of them), the tangents' handedness with it
+        static Mesh Mirrored(Mesh source, Vector3 sign)
+        {
+            var mesh = UnityEngine.Object.Instantiate(source);
+            mesh.name = source.name;
+            mesh.hideFlags = HideFlags.HideAndDontSave;
+            var vertices = mesh.vertices;
+            for (int i = 0; i < vertices.Length; i++) vertices[i] = Vector3.Scale(vertices[i], sign);
+            mesh.vertices = vertices;
+            var normals = mesh.normals;
+            if (normals != null && normals.Length == vertices.Length)
+            {
+                for (int i = 0; i < normals.Length; i++) normals[i] = Vector3.Scale(normals[i], sign);
+                mesh.normals = normals;
+            }
+            bool flipsWinding = sign.x * sign.y * sign.z < 0;
+            var tangents = mesh.tangents;
+            if (tangents != null && tangents.Length == vertices.Length)
+            {
+                for (int i = 0; i < tangents.Length; i++)
+                    tangents[i] = new Vector4(tangents[i].x * sign.x, tangents[i].y * sign.y, tangents[i].z * sign.z, flipsWinding ? -tangents[i].w : tangents[i].w);
+                mesh.tangents = tangents;
+            }
+            if (flipsWinding)
+            {
+                for (int sub = 0; sub < mesh.subMeshCount; sub++)
+                {
+                    var triangles = mesh.GetTriangles(sub);
+                    for (int i = 0; i + 2 < triangles.Length; i += 3)
+                    {
+                        int swap = triangles[i + 1];
+                        triangles[i + 1] = triangles[i + 2];
+                        triangles[i + 2] = swap;
+                    }
+                    mesh.SetTriangles(triangles, sub);
+                }
+            }
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         void MoveTextures(string modelName, GLTFRoot root, Dictionary<int, GLTFSceneExporter.UniqueTexture> imageTextures)

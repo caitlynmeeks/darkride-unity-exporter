@@ -31,6 +31,7 @@ namespace Darkride.Exporter
         public Material[] Materials;
         public int LightmapIndex = -1;
         public Vector4 LightmapScaleOffset;
+        public Vector3 Mirror = Vector3.one;     // -1 on the axes Unity's scale negates: the mesh is written mirrored
     }
 
     public class Report
@@ -191,7 +192,11 @@ namespace Darkride.Exporter
             Bounds local = VertexBounds(mesh);
             Vector3 scale = t.lossyScale;
             if (scale.x < 0 || scale.y < 0 || scale.z < 0)
-                report.Warn(PathOf(t) + ": negative scale; the entity is placed with the scale's size and is not mirrored");
+            {
+                // an entity's dimensions cannot be negative, so the mirror goes into a mesh file of its own
+                e.Mirror = new Vector3(scale.x < 0 ? -1 : 1, scale.y < 0 ? -1 : 1, scale.z < 0 ? -1 : 1);
+                report.Count("mirrored instances (negative scale: a mirrored mesh file)");
+            }
             e.Position = Conversions.Point(t.TransformPoint(local.center));
             e.Rotation = Conversions.Rotation(t.rotation);
             e.Dimensions = Vector3.Max(Vector3.Scale(Conversions.Size(scale), local.size), Vector3.one * 0.001f);
