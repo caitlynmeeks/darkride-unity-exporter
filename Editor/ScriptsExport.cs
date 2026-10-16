@@ -49,16 +49,17 @@ namespace Darkride.Exporter
 //
 //  Brings this export into the world you stand in: the engine's clipboard reads scene.json and pastes its entities
 //  with new ids, parents kept, every position moved by AT (where Unity's origin lands; {0, 0, 0} keeps Unity's
-//  coordinates). Then, when LOOK_FROM_UNITY_CAMERA is true, your camera goes to Unity's camera (Camera.mode
-//  ""independent""; press Escape or pick a camera mode to get it back; Unity's vertical field of view was @FOV@
-//  degrees, Settings > General > Field of view matches it). Load once from Running Scripts (from URL or from disk);
-//  it stops itself. remove-scene.js takes the import out again.
+//  coordinates). With LOOK_FROM_UNITY_CAMERA true your camera goes to Unity's camera afterwards (Camera.mode
+//  ""independent""; View > Third Person gives it back; the editor's build mode keeps its own camera); off by default,
+//  view-from-unity-camera.js does the same on request. Unity's vertical field of view was @FOV@ degrees
+//  (Settings > General > Field of view matches it). Load once from Running Scripts (from URL or from disk); it
+//  stops itself. remove-scene.js takes the import out again.
 //
 
 (function () {
     var SCENE_JSON = ""@SCENE_JSON@"";
     var AT = { x: 0, y: 0, z: 0 };
-    var LOOK_FROM_UNITY_CAMERA = true;
+    var LOOK_FROM_UNITY_CAMERA = false;
     var VIEW = @VIEW@;
 
     if (!Clipboard.importEntities(SCENE_JSON)) {
@@ -72,7 +73,7 @@ namespace Darkride.Exporter
         Camera.mode = ""independent"";
         Camera.position = Vec3.sum(VIEW.position, AT);
         Camera.orientation = VIEW.orientation;
-        print(""darkride import: the camera is at Unity's camera (independent mode; Escape or a camera mode gives it back)"");
+        print(""darkride import: the camera is at Unity's camera (independent mode; View > Third Person gives it back)"");
     }
     Script.stop();
 }());
@@ -83,8 +84,9 @@ namespace Darkride.Exporter
 //
 //  Puts your camera where Unity's camera is, for the side by side with unity-view.png (Unity's vertical field of
 //  view was @FOV@ degrees; Settings > General > Field of view matches it). The editor's build mode drives the
-//  camera itself, so leave build mode first; Escape or a camera mode gives the camera back. AT is the offset
-//  import-scene.js pasted the scene with ({0, 0, 0} unless you changed it).
+//  camera itself, so leave build mode first; View > Third Person (or First Person) gives the camera back, and
+//  leaves independent mode, in which the view does not follow the avatar. AT is the offset import-scene.js
+//  pasted the scene with ({0, 0, 0} unless you changed it).
 //
 
 (function () {
@@ -99,7 +101,7 @@ namespace Darkride.Exporter
     Camera.mode = ""independent"";
     Camera.position = Vec3.sum(VIEW.position, AT);
     Camera.orientation = VIEW.orientation;
-    print(""darkride view: the camera is at Unity's camera, "" + JSON.stringify(Camera.position));
+    print(""darkride view: the camera is at Unity's camera, "" + JSON.stringify(Camera.position) + "" (View > Third Person gives it back)"");
     Script.stop();
 }());
 ";

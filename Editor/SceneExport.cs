@@ -71,7 +71,7 @@ namespace Darkride.Exporter
             if (entities.Count == 0) throw new InvalidOperationException("Nothing to export: no active MeshRenderer with a mesh, and no Mixed or Realtime light.");
 
             var meshes = new MeshExport(modelsDir, report);
-            var models = entities.Where(e => e.Type == "Model").ToList();
+            var models = entities.Where(e => e.Type == "Model" && e.Mesh != null).ToList();
             for (int i = 0; i < models.Count; i++)
             {
                 var e = models[i];

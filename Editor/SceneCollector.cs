@@ -124,6 +124,7 @@ namespace Darkride.Exporter
                 else if (filter == null || filter.sharedMesh == null) report.Warn(PathOf(t) + ": MeshRenderer without a mesh, skipped");
                 else mine = MakeModel(t, renderer, filter.sharedMesh);
             }
+            if (mine == null) mine = MakeCollisionOnly(t);
             if (go.GetComponent<SkinnedMeshRenderer>() != null) report.Warn(PathOf(t) + ": skinned mesh not exported (not supported yet)");
             if (go.GetComponent<Terrain>() != null) report.Warn(PathOf(t) + ": Unity Terrain not exported (darkride has its own terrain entity)");
             if (go.GetComponent<ParticleSystem>() != null) report.Count("particle systems skipped");
@@ -174,8 +175,74 @@ namespace Darkride.Exporter
             var filter = t.GetComponent<MeshFilter>();
             if (renderer != null && renderer.enabled && filter != null && filter.sharedMesh != null) return true;
             var light = t.GetComponent<Light>();
-            return light != null && light.enabled && options.ExportLights && light.lightmapBakeType != LightmapBakeType.Baked &&
-                   (light.type == LightType.Point || light.type == LightType.Spot);
+            if (light != null && light.enabled && options.ExportLights && light.lightmapBakeType != LightmapBakeType.Baked &&
+                (light.type == LightType.Point || light.type == LightType.Spot)) return true;
+            return SolidCollider(t) != null;
+        }
+
+        // The first enabled, non-trigger collider on the object
+        static Collider SolidCollider(Transform t)
+        {
+            foreach (var collider in t.GetComponents<Collider>())
+                if (collider.enabled && !collider.isTrigger) return collider;
+            return null;
+        }
+
+        // An object with a collider and nothing drawn (a disabled renderer, or none): Unity's way of giving a wall
+        // or a floor its collision. It becomes an invisible shape the avatar collides with.
+        ExportEntity MakeCollisionOnly(Transform t)
+        {
+            var collider = SolidCollider(t);
+            if (collider == null) return null;
+            var e = new ExportEntity { Name = t.name, Source = t };
+            Vector3 scale = Conversions.Size(t.lossyScale);
+            e.Rotation = Conversions.Rotation(t.rotation);
+            if (collider is BoxCollider box)
+            {
+                e.Type = "Shape";
+                e.Properties["shape"] = "Cube";
+                e.Properties["shapeType"] = "box";
+                e.Position = Conversions.Point(t.TransformPoint(box.center));
+                e.Dimensions = Vector3.Max(Vector3.Scale(box.size, scale), Vector3.one * 0.001f);
+            }
+            else if (collider is SphereCollider sphere)
+            {
+                e.Type = "Shape";
+                e.Properties["shape"] = "Sphere";
+                e.Properties["shapeType"] = "sphere";
+                e.Position = Conversions.Point(t.TransformPoint(sphere.center));
+                float d = sphere.radius * 2 * Mathf.Max(scale.x, scale.y, scale.z);
+                e.Dimensions = Vector3.one * Mathf.Max(d, 0.001f);
+            }
+            else if (collider is CapsuleCollider capsule)
+            {
+                e.Type = "Shape";
+                e.Properties["shape"] = "Cylinder";
+                e.Properties["shapeType"] = "capsule-y";
+                e.Position = Conversions.Point(t.TransformPoint(capsule.center));
+                float d = capsule.radius * 2 * Mathf.Max(scale.x, scale.z);
+                e.Dimensions = new Vector3(d, Mathf.Max(capsule.height * scale.y, d), d);
+            }
+            else if (collider is MeshCollider meshCollider && meshCollider.sharedMesh != null)
+            {
+                e.Type = "Model";
+                e.Mesh = meshCollider.sharedMesh;
+                e.Materials = new Material[0];
+                e.Properties["shapeType"] = meshCollider.convex ? "simple-hull" : "static-mesh";
+                Bounds local = VertexBounds(e.Mesh);
+                e.Position = Conversions.Point(t.TransformPoint(local.center));
+                e.Dimensions = Vector3.Max(Vector3.Scale(scale, local.size), Vector3.one * 0.001f);
+                if (t.lossyScale.x < 0 || t.lossyScale.y < 0 || t.lossyScale.z < 0)
+                    e.Mirror = new Vector3(t.lossyScale.x < 0 ? -1 : 1, t.lossyScale.y < 0 ? -1 : 1, t.lossyScale.z < 0 ? -1 : 1);
+            }
+            else
+            {
+                return null;
+            }
+            e.Properties["visible"] = false;
+            e.Properties["canCastShadow"] = false;
+            report.Count("collision-only objects (invisible shapes)");
+            return e;
         }
 
         ExportEntity MakeModel(Transform t, MeshRenderer renderer, Mesh mesh)
@@ -263,11 +330,11 @@ namespace Darkride.Exporter
         static string ShapeTypeOf(Transform t, out bool collisionless)
         {
             collisionless = false;
-            var meshCollider = t.GetComponent<MeshCollider>();
-            if (meshCollider != null && meshCollider.enabled) return meshCollider.convex ? "simple-hull" : "static-mesh";
-            if (t.GetComponent<BoxCollider>() != null) return "box";
-            if (t.GetComponent<SphereCollider>() != null) return "sphere";
-            if (t.GetComponent<CapsuleCollider>() != null) return "capsule-y";
+            var collider = SolidCollider(t);
+            if (collider is MeshCollider meshCollider) return meshCollider.convex ? "simple-hull" : "static-mesh";
+            if (collider is BoxCollider) return "box";
+            if (collider is SphereCollider) return "sphere";
+            if (collider is CapsuleCollider) return "capsule-y";
             collisionless = true;
             return "none";
         }
