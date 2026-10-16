@@ -51,6 +51,9 @@ namespace Darkride.Exporter
                 baseUrl = new Uri(localPath).AbsoluteUri.TrimEnd('/');
             }
 
+            // written into a staging folder first: a failed export leaves the previous one in place
+            string finalPath = localPath;
+            localPath = finalPath + ".exporting";
             if (Directory.Exists(localPath)) Directory.Delete(localPath, true);
             string modelsDir = Path.Combine(localPath, "models");
             string lightmapsDir = Path.Combine(localPath, "lightmaps");
@@ -168,6 +171,9 @@ namespace Darkride.Exporter
                 UploadFolder(client, folder, localPath, progress, report);
             }
             File.WriteAllText(Path.Combine(localPath, "report.txt"), report.Text());
+            if (Directory.Exists(finalPath)) Directory.Delete(finalPath, true);
+            Directory.Move(localPath, finalPath);
+            result.LocalPath = finalPath;
             return result;
         }
 

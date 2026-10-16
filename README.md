@@ -71,7 +71,10 @@ Unity -batchmode -projectPath <project> -executeMethod Darkride.Exporter.Darkrid
 ```
 
 Not `-nographics`: the reflection probe is resampled on the GPU. `-darkrideUpload` uses the login saved by the
-window.
+window. Add `-burst-disable-compilation` when the batch run is only for exporting: the Burst compiler, which
+starts in the background, has crashed the editor mid-export once (a segfault in its own thread), and the export
+does not need it. The export is written into `<folder>.exporting` and renamed when done, so a failed run leaves
+the previous export in place.
 
 ## Not yet
 
