@@ -25,9 +25,14 @@ namespace Darkride.Exporter
             var previousTarget = camera.targetTexture;
             var previousActive = RenderTexture.active;
             Texture2D picture = null;
+            bool asyncCompilation = UnityEditor.ShaderUtil.allowAsyncCompilation;
             try
             {
+                // every shader variant must be ready, else the editor draws a placeholder colour for the ones still
+                // compiling (the first batch-mode render showed flat salmon surfaces that way)
+                UnityEditor.ShaderUtil.allowAsyncCompilation = false;
                 camera.targetTexture = rt;
+                camera.Render();
                 camera.Render();
                 RenderTexture.active = rt;
                 picture = new Texture2D(width, height, TextureFormat.RGB24, false);
@@ -44,6 +49,7 @@ namespace Darkride.Exporter
             }
             finally
             {
+                UnityEditor.ShaderUtil.allowAsyncCompilation = asyncCompilation;
                 camera.targetTexture = previousTarget;
                 RenderTexture.active = previousActive;
                 if (picture != null) Object.DestroyImmediate(picture);
