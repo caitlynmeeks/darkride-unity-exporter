@@ -19,7 +19,7 @@
             continue;
         }
         try {
-            if (JSON.parse(userData).export === FOLDER) {
+            if (JSON.parse(userData)["export"] === FOLDER) {
                 Entities.deleteEntity(found[i]);
                 removed++;
             }
