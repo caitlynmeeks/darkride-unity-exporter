@@ -167,7 +167,7 @@ namespace Darkride.Exporter
                 lastLocalPath = result.LocalPath;
                 lastResult = result.Report.Text();
                 Debug.Log("[darkride] export done\n" + lastResult);
-                EditorUtility.DisplayDialog("Darkride Export", result.EntityCount + " entities written.\n\nscene.json: " + result.SceneUrl + "\n\n" + Summary(result.Report), "OK");
+                EditorUtility.DisplayDialog("Darkride Export", result.EntityCount + " entities written.\n\nIn darkride, Running Scripts > from URL:\n" + result.ImportScriptUrl + "\n\n" + Summary(result.Report), "OK");
             }
             catch (Exception e)
             {

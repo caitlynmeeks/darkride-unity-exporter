@@ -32,6 +32,7 @@ namespace Darkride.Exporter
                 var result = SceneExport.Run(options, client, (step, fraction) => Debug.Log("[darkride] " + step));
                 Debug.Log("[darkride] export done\n" + result.Report.Text());
                 Debug.Log("[darkride] scene.json: " + result.SceneUrl);
+                Debug.Log("[darkride] import script: " + result.ImportScriptUrl);
             }
             catch (Exception e)
             {

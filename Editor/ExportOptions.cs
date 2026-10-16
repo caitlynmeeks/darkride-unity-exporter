@@ -19,6 +19,7 @@ namespace Darkride.Exporter
         public bool ExportZone = true;
         public bool ExportLights = true;       // Mixed and Realtime lights as Light entities
         public GameObject[] Roots;             // null: the whole scene; else these objects and their children
+        public bool Screenshot = true;         // unity-view.png from the scene's camera, for the side by side
         public float ProbeSpacing = 1.0f;      // the probe volume's grid spacing (step 4, not written yet)
 
         public static string DefaultOutputRoot()

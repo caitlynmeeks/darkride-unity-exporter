@@ -21,9 +21,10 @@ Window > Package Manager > + > *Install package from git URL…*, in this order:
 3. Check the folder name (`<scene>-<date>`; exporting into the same folder again updates the files, and every
    world using them) and the options, then **Export Scene**. The folder is also written locally
    (`<project>/DarkrideExports/<folder>` by default) with `report.txt`.
-4. In darkride, load `darkride/import-scene.js` from this repository (Running Scripts > from disk or from URL)
-   with `SCENE_JSON` set to the link the exporter printed: the scene is pasted with Unity's coordinates.
-   `remove-scene.js` takes it out again.
+4. In darkride, Running Scripts > from URL with the `import-scene.js` link the exporter printed (the script is
+   written into the export folder, filled in): the scene is pasted with Unity's coordinates and your camera goes
+   to Unity's camera, for a side by side with `unity-view.png`. `remove-scene.js` in the same folder takes the
+   import out again. (`darkride/` in this repository holds the same two scripts with the blanks open.)
 
 **Darkride > Export Selection…** exports the selected objects and their children.
 
@@ -36,6 +37,8 @@ darkride client on the same machine.
 <folder>/
   scene.json            the entities: Model, Light, Shape (invisible parents), Zone
   report.txt            counts, what was skipped and why, warnings
+  import-scene.js       pastes the scene in darkride (Running Scripts > from URL), remove-scene.js removes it
+  unity-view.png        Unity's render from the scene camera, for comparing
   models/<mesh>.gltf    one per distinct mesh and material set, + <mesh>.bin
   models/textures/      every texture once, PNG or JPEG copied from the source where possible
   lightmaps/Lightmap-N.exr       half RGB, ZIP (from Unity's float EXR)

@@ -19,6 +19,7 @@ namespace Darkride.Exporter
         public string LocalPath;
         public string BaseUrl;
         public string SceneUrl;
+        public string ImportScriptUrl;
         public int EntityCount;
         public Report Report;
     }
@@ -125,7 +126,8 @@ namespace Darkride.Exporter
                 }
             }
 
-            if (options.ExportZone) entities.Add(MakeZone(collector, scene.name, ambientUrl, ambientIntensity, report));
+            ExportEntity zone = MakeZone(collector, scene.name, ambientUrl, ambientIntensity, report);
+            if (options.ExportZone) entities.Add(zone);
 
             progress("Writing scene.json", 0.88f);
             var list = new List<object>();
@@ -142,12 +144,21 @@ namespace Darkride.Exporter
             File.WriteAllText(Path.Combine(localPath, "scene.json"), Json.Serialize(document, true));
             report.Notes.Add(entities.Count + " entities in scene.json");
 
+            var camera = Screenshot.SceneCamera();
+            ScriptsExport.Write(localPath, baseUrl, folder, camera, zone.Position);
+            if (camera != null && options.Screenshot)
+            {
+                progress("Unity's view", 0.89f);
+                Screenshot.Write(camera, Path.Combine(localPath, "unity-view.png"), 1920, 1080, report);
+            }
+
             var result = new ExportResult
             {
                 Folder = folder,
                 LocalPath = localPath,
                 BaseUrl = baseUrl,
                 SceneUrl = baseUrl + "/scene.json",
+                ImportScriptUrl = baseUrl + "/import-scene.js",
                 EntityCount = entities.Count,
                 Report = report,
             };
