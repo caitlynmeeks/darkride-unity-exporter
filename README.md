@@ -37,7 +37,8 @@ darkride client on the same machine.
 <folder>/
   scene.json            the entities: Model, Light, Shape (invisible parents), Zone
   report.txt            counts, what was skipped and why, warnings
-  import-scene.js       pastes the scene in darkride (Running Scripts > from URL), remove-scene.js removes it
+  import-scene.js       pastes the scene in darkride (Running Scripts > from URL), remove-scene.js removes it,
+                        view-from-unity-camera.js puts the camera where Unity's is (outside build mode)
   unity-view.png        Unity's render from the scene camera, for comparing
   models/<mesh>.gltf    one per distinct mesh and material set, + <mesh>.bin
   models/textures/      every texture once, PNG or JPEG copied from the source where possible

@@ -27,6 +27,11 @@ namespace Darkride.Exporter
                 .Replace("@FOV@", F(fov))
                 .Replace("@FOLDER@", folder);
             File.WriteAllText(Path.Combine(localPath, "import-scene.js"), import);
+            string look = Template.VIEW
+                .Replace("@VIEW@", view)
+                .Replace("@FOV@", F(fov))
+                .Replace("@FOLDER@", folder);
+            File.WriteAllText(Path.Combine(localPath, "view-from-unity-camera.js"), look);
             string remove = Template.REMOVE
                 .Replace("@FOLDER@", folder)
                 .Replace("@CENTRE@", Vec(zoneCentre));
@@ -69,6 +74,32 @@ namespace Darkride.Exporter
         Camera.orientation = VIEW.orientation;
         print(""darkride import: the camera is at Unity's camera (independent mode; Escape or a camera mode gives it back)"");
     }
+    Script.stop();
+}());
+";
+
+            public const string VIEW = @"//
+//  view-from-unity-camera.js (written by the Darkride Exporter for @FOLDER@)
+//
+//  Puts your camera where Unity's camera is, for the side by side with unity-view.png (Unity's vertical field of
+//  view was @FOV@ degrees; Settings > General > Field of view matches it). The editor's build mode drives the
+//  camera itself, so leave build mode first; Escape or a camera mode gives the camera back. AT is the offset
+//  import-scene.js pasted the scene with ({0, 0, 0} unless you changed it).
+//
+
+(function () {
+    var AT = { x: 0, y: 0, z: 0 };
+    var VIEW = @VIEW@;
+
+    if (!VIEW) {
+        print(""darkride view: the scene had no camera"");
+        Script.stop();
+        return;
+    }
+    Camera.mode = ""independent"";
+    Camera.position = Vec3.sum(VIEW.position, AT);
+    Camera.orientation = VIEW.orientation;
+    print(""darkride view: the camera is at Unity's camera, "" + JSON.stringify(Camera.position));
     Script.stop();
 }());
 ";
