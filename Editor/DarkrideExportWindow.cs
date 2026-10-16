@@ -101,7 +101,7 @@ namespace Darkride.Exporter
             DarkridePrefs.Upload = EditorGUILayout.Toggle(new GUIContent("Upload to My Files", "Off: only the local folder is written, with file: links"), DarkridePrefs.Upload);
             DarkridePrefs.KeepHierarchy = EditorGUILayout.Toggle(new GUIContent("Keep hierarchy", "Parents become invisible Empty entities so a prefab instance moves as one"), DarkridePrefs.KeepHierarchy);
             DarkridePrefs.ExportLightmaps = EditorGUILayout.Toggle("Lightmaps", DarkridePrefs.ExportLightmaps);
-            DarkridePrefs.ExportReflectionProbe = EditorGUILayout.Toggle(new GUIContent("Reflection probe", "The largest baked reflection probe becomes the zone's ambient map"), DarkridePrefs.ExportReflectionProbe);
+            DarkridePrefs.ExportReflectionProbe = EditorGUILayout.Toggle(new GUIContent("Reflection probe", "Every baked reflection probe becomes a reflection probe entity; the largest is the zone's ambient map too"), DarkridePrefs.ExportReflectionProbe);
             DarkridePrefs.ExportZone = EditorGUILayout.Toggle(new GUIContent("Zone", "A Zone entity over the scene: key light, ambient map, sky colour"), DarkridePrefs.ExportZone);
             DarkridePrefs.ExportLights = EditorGUILayout.Toggle(new GUIContent("Mixed and Realtime lights", "Baked lights are in the lightmaps and are only listed"), DarkridePrefs.ExportLights);
             using (new EditorGUI.DisabledScope(true))

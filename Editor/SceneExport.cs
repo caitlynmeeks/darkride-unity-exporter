@@ -108,25 +108,35 @@ namespace Darkride.Exporter
                 }
             }
 
+            // every baked reflection probe becomes a reflection probe entity (an invisible box the probe's size, with
+            // its cube map strip), and the largest one is the zone's ambient map as well, for whatever lies outside
+            // every probe
             string ambientUrl = null;
             float ambientIntensity = 1;
             if (options.ExportReflectionProbe)
             {
-                progress("Reflection probe", 0.82f);
-                var probe = PickProbe(report);
-                if (probe != null)
-                {
-                    string file = ReflectionProbeExport.Write(probe, probesDir, "ReflectionProbe.exr", report);
-                    if (file != null)
-                    {
-                        ambientUrl = baseUrl + "/probes/" + file;
-                        ambientIntensity = probe.intensity;
-                    }
-                }
-                else
+                var probes = BakedProbes(roots);
+                if (probes.Count == 0)
                 {
                     report.Notes.Add("No baked reflection probe: the zone keeps the engine's default ambient");
                 }
+                var usedNames = new HashSet<string>();
+                for (int i = 0; i < probes.Count; i++)
+                {
+                    var probe = probes[i];
+                    progress("Reflection probe " + probe.name, 0.82f + 0.05f * i / Math.Max(1, probes.Count));
+                    string fileName = ProbeFileName(probe, usedNames);
+                    string file = ReflectionProbeExport.Write(probe, probesDir, fileName, report);
+                    if (file == null) continue;
+                    string url = baseUrl + "/probes/" + file;
+                    if (ambientUrl == null)
+                    {
+                        ambientUrl = url;
+                        ambientIntensity = probe.intensity;
+                    }
+                    entities.Add(MakeProbe(probe, url));
+                }
+                if (probes.Count > 0) report.Count("reflection probes (entities; the largest is the zone's ambient map too)", probes.Count);
             }
 
             ExportEntity zone = MakeZone(collector, scene.name, ambientUrl, ambientIntensity, report);
@@ -189,17 +199,57 @@ namespace Darkride.Exporter
             }
         }
 
-        static ReflectionProbe PickProbe(Report report)
+        // The scene's baked reflection probes (under the selected roots, for a selection), the largest first
+        static List<ReflectionProbe> BakedProbes(IEnumerable<GameObject> roots)
         {
-            var probes = UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.None)
+            var rootSet = new HashSet<Transform>(roots.Select(g => g.transform));
+            return UnityEngine.Object.FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.None)
                 .Where(p => p.enabled && p.gameObject.activeInHierarchy && p.mode == UnityEngine.Rendering.ReflectionProbeMode.Baked && p.bakedTexture != null)
+                .Where(p => UnderOneOf(p.transform, rootSet))
                 .OrderByDescending(p => p.size.x * p.size.y * p.size.z)
                 .ToList();
-            if (probes.Count == 0) return null;
-            if (probes.Count > 1)
-                report.Notes.Add(probes.Count + " baked reflection probes; the largest (" + probes[0].name + ") is the zone's ambient map, the others wait for reflection probe entities: " +
-                                 string.Join(", ", probes.Skip(1).Select(p => p.name)));
-            return probes[0];
+        }
+
+        static bool UnderOneOf(Transform t, HashSet<Transform> roots)
+        {
+            for (var p = t; p != null; p = p.parent) if (roots.Contains(p)) return true;
+            return false;
+        }
+
+        static string ProbeFileName(ReflectionProbe probe, HashSet<string> used)
+        {
+            string stem = System.Text.RegularExpressions.Regex.Replace(probe.name, "[^A-Za-z0-9._-]+", "_").Trim('_');
+            if (stem.Length == 0) stem = "ReflectionProbe";
+            string name = stem;
+            for (int n = 2; used.Contains(name); n++) name = stem + "-" + n;
+            used.Add(name);
+            return name + ".exr";
+        }
+
+        // A reflection probe entity (LIGHTMAPS.md §7): an invisible, collisionless box the size of Unity's box, at the
+        // probe's position, unparented since Unity's box is axis-aligned in the world whatever the transform; the
+        // engine reads the entry "reflectionProbe" of its userData. Unity's center (the box's offset from the
+        // probe) mirrors X like every point
+        static ExportEntity MakeProbe(ReflectionProbe probe, string url)
+        {
+            var e = new ExportEntity { Type = "Shape", Name = probe.name, Source = probe.transform };
+            e.Position = Conversions.Point(probe.transform.position);
+            e.Rotation = Quaternion.identity;
+            e.Dimensions = Conversions.Size(probe.size);
+            e.Properties["shape"] = "Cube";
+            e.Properties["visible"] = false;
+            e.Properties["collisionless"] = true;
+            var center = Conversions.Direction(probe.center);
+            e.UserData["reflectionProbe"] = new Dictionary<string, object>
+            {
+                { "url", url },
+                { "boxOffset", new List<object> { center.x, center.y, center.z } },
+                { "intensity", probe.intensity },
+                { "importance", probe.importance },
+                { "blendDistance", probe.blendDistance },
+                { "boxProjection", probe.boxProjection },
+            };
+            return e;
         }
 
         static ExportEntity MakeZone(SceneCollector collector, string sceneName, string ambientUrl, float ambientIntensity, Report report)

@@ -1,7 +1,7 @@
 # Darkride Exporter for Unity
 
 A Unity editor package that exports a scene to [darkride](https://vr.darkride.ai): one glTF per mesh with its
-materials and textures, the baked lightmaps and direction maps, the reflection probe as the zone's ambient map,
+materials and textures, the baked lightmaps and direction maps, the reflection probes as probe entities (the largest the zone's ambient map too),
 Mixed and Realtime lights, and `scene.json` in the engine's entity format, written to a folder and uploaded into
 My Files. The design is in darkride-ops `LIGHTMAPS.md` (section 3 and step 3).
 
@@ -58,7 +58,10 @@ darkride client on the same machine.
   spot lights become Light entities (intensity as in Unity, not yet calibrated); a Mixed or Realtime directional
   light becomes the zone's key light with shadows.
 - The **Zone** covers the scene bounds plus 2 m: key light off for a baked-only scene, `ambientURL` the
-  reflection probe strip with the probe's intensity, the sky a flat colour from the environment lighting.
+  reflection probe strip with the probe's intensity, the sky a flat colour from the environment lighting. Every baked
+  reflection probe is also a reflection probe entity: an invisible box of Unity's box size at the probe's position, its
+  userData `reflectionProbe` carrying the probe's own strip (`probes/<name>.exr`), box offset, intensity, importance,
+  blend distance and box projection (the engine's LIGHTMAPS.md §7).
 - Axes: Unity is left-handed, glTF and darkride right-handed; X is mirrored for meshes, positions, rotations,
   light directions and the direction maps (UnityGLTF's convention).
 
@@ -78,6 +81,6 @@ the previous export in place.
 
 ## Not yet
 
-Skinned meshes, Unity Terrain, particles, UI, skybox materials, several reflection probes (box projection), the
+Skinned meshes, Unity Terrain, particles, UI, skybox materials, the
 light probe volume (step 4 of LIGHTMAPS.md; the spacing option is already in the window), light intensity
 calibration, single-prefab export with the lightmap inside the material.
