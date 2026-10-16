@@ -1,0 +1,10 @@
+{
+  "name": "com.darkride.exporter",
+  "displayName": "Darkride Exporter",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "Exports a Unity scene to darkride: one glTF per mesh with its materials and textures, the baked lightmaps and direction maps, the reflection probe as the zone's ambient map, Mixed and Realtime lights, and scene.json in the engine's entity format, written to a folder and uploaded into My Files. Needs UnityGLTF (org.khronos.unitygltf) in the project.",
+  "author": { "name": "Darkride" },
+  "keywords": [ "darkride", "export", "gltf", "lightmap" ],
+  "dependencies": {}
+}
