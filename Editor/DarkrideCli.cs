@@ -1,11 +1,15 @@
 // Batch mode:
 //   Unity -batchmode -projectPath <project> -executeMethod Darkride.Exporter.DarkrideCli.ExportScene
 //         -darkrideScene Assets/Scenes/Room.unity -darkrideOut /path/to/exports [-darkrideFolder room-test]
-//         [-darkrideUpload] [-darkrideFlat] -logFile export.log
+//         [-darkrideUpload] [-darkrideFlat] [-darkrideProbeSpacing 1] [-darkrideNoProbeVolume]
+//         [-darkrideProbeCheckSpheres] -logFile export.log
 // Without -darkrideUpload the folder is written locally with file: links. -darkrideUpload uses the login saved by
-// the window. Not -nographics: the reflection probe is resampled on the GPU.
+// the window. Not -nographics: the reflection probe is resampled on the GPU. -darkrideProbeSpacing is the probe
+// volume grid's spacing in metres (1 by default), -darkrideNoProbeVolume leaves the probe volume out,
+// -darkrideProbeCheckSpheres puts five white balls lit by the probes alone into Unity's view and scene.json.
 
 using System;
+using System.Globalization;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -28,6 +32,9 @@ namespace Darkride.Exporter
                     FolderName = Arg("-darkrideFolder"),
                     Upload = HasFlag("-darkrideUpload"),
                     KeepHierarchy = !HasFlag("-darkrideFlat"),
+                    ExportProbeVolume = !HasFlag("-darkrideNoProbeVolume"),
+                    ProbeCheckSpheres = HasFlag("-darkrideProbeCheckSpheres"),
+                    ProbeSpacing = float.TryParse(Arg("-darkrideProbeSpacing") ?? "", NumberStyles.Float, CultureInfo.InvariantCulture, out float spacing) ? spacing : 1.0f,
                 };
                 if (HasFlag("-darkrideScreenshotOnly"))
                 {

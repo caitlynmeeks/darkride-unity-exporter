@@ -2,8 +2,9 @@
 
 A Unity editor package that exports a scene to [darkride](https://vr.darkride.ai): one glTF per mesh with its
 materials and textures, the baked lightmaps and direction maps, the reflection probes as probe entities (the largest the zone's ambient map too),
-Mixed and Realtime lights, and `scene.json` in the engine's entity format, written to a folder and uploaded into
-My Files. The design is in darkride-ops `LIGHTMAPS.md` (section 3 and step 3).
+the Adaptive Probe Volume bake as the zone's probe volume, Mixed and Realtime lights, and `scene.json` in the
+engine's entity format, written to a folder and uploaded into My Files. The design is in darkride-ops
+`LIGHTMAPS.md` (section 3, steps 3 and 4).
 
 Unity 6000.x, URP. Materials should be URP/Lit (UnityGLTF converts them to glTF PBR).
 
@@ -45,6 +46,8 @@ darkride client on the same machine.
   lightmaps/Lightmap-N.exr       half RGB, ZIP (from Unity's float EXR)
   lightmaps/Lightmap-N_dir.png   the direction map, x mirrored
   probes/ReflectionProbe.exr     the largest baked probe as a 1:6 vertical strip (the zone's ambientURL)
+  probes/ProbeVolume.bin         the Adaptive Probe Volume bake resampled onto a grid over the zone (its userData
+                                 probeVolume): L2 spherical harmonics in the engine's convention, RGBA halves
 ```
 
 - A MeshRenderer becomes a **Model** entity: `modelURL`, position (the centre of the mesh bounds), rotation,
@@ -70,17 +73,21 @@ darkride client on the same machine.
 ```
 Unity -batchmode -projectPath <project> -executeMethod Darkride.Exporter.DarkrideCli.ExportScene \
       -darkrideScene Assets/Scenes/Room.unity -darkrideOut /path/to/exports [-darkrideFolder room-test] \
-      [-darkrideUpload] [-darkrideFlat] -logFile export.log
+      [-darkrideUpload] [-darkrideFlat] [-darkrideProbeSpacing 1] [-darkrideNoProbeVolume] \
+      [-darkrideProbeCheckSpheres] -logFile export.log
 ```
 
 Not `-nographics`: the reflection probe is resampled on the GPU. `-darkrideUpload` uses the login saved by the
-window. Add `-burst-disable-compilation` when the batch run is only for exporting: the Burst compiler, which
+window. `-darkrideProbeSpacing` is the probe volume grid's spacing in metres (1 by default; the bake's minimum
+probe distance, or a multiple of it, keeps the baked probes exactly), `-darkrideNoProbeVolume` leaves the probe
+volume out, and `-darkrideProbeCheckSpheres` puts five white matte balls, lit by the probes alone, 1 m above the
+floor into Unity's view and `scene.json`, for comparing the volume by eye. Add `-burst-disable-compilation` when the batch run is only for exporting: the Burst compiler, which
 starts in the background, has crashed the editor mid-export once (a segfault in its own thread), and the export
 does not need it. The export is written into `<folder>.exporting` and renamed when done, so a failed run leaves
 the previous export in place.
 
 ## Not yet
 
-Skinned meshes, Unity Terrain, particles, UI, skybox materials, the
-light probe volume (step 4 of LIGHTMAPS.md; the spacing option is already in the window), light intensity
-calibration, single-prefab export with the lightmap inside the material.
+Skinned meshes, Unity Terrain, particles, UI, skybox materials, light intensity calibration, single-prefab export
+with the lightmap inside the material, several probe volumes or a volume with sky occlusion (the bake's extra
+channels are left out).

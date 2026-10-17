@@ -139,8 +139,42 @@ namespace Darkride.Exporter
                 if (probes.Count > 0) report.Count("reflection probes (entities; the largest is the zone's ambient map too)", probes.Count);
             }
 
-            ExportEntity zone = MakeZone(collector, scene.name, ambientUrl, ambientIntensity, report);
+            // the probe volume (LIGHTMAPS.md step 4): the scene's Adaptive Probe Volume bake resampled onto a grid over
+            // the zone's box, for the ambient diffuse light of whatever has no lightmap
+            ProbeVolumeExport.Written volume = null;
+            if (options.ExportProbeVolume)
+            {
+                progress("Probe volume", 0.87f);
+                volume = ProbeVolumeExport.Write(ZoneBox(collector), options.ProbeSpacing, probesDir, "ProbeVolume.bin", report);
+            }
+            ExportEntity zone = MakeZone(collector, scene.name, ambientUrl, ambientIntensity, volume != null ? baseUrl + "/probes/" + volume.File : null, report);
             if (options.ExportZone) entities.Add(zone);
+
+            // probe check spheres: white matte balls lit by the probes alone, 1 m above the scene's floor at its middle
+            // and toward each side, in scene.json and in Unity's view, for comparing the probe volume by eye
+            var checkSpheres = new List<GameObject>();
+            if (options.ProbeCheckSpheres && collector.WorldBounds.HasValue)
+            {
+                var b = collector.WorldBounds.Value;
+                float y = b.min.y + 1.0f;
+                var spots = new[] {
+                    new Vector3(b.center.x, y, b.center.z),
+                    new Vector3(b.center.x + 0.3f * b.size.x, y, b.center.z), new Vector3(b.center.x - 0.3f * b.size.x, y, b.center.z),
+                    new Vector3(b.center.x, y, b.center.z + 0.3f * b.size.z), new Vector3(b.center.x, y, b.center.z - 0.3f * b.size.z),
+                };
+                for (int i = 0; i < spots.Length; i++)
+                {
+                    var e = new ExportEntity { Type = "Shape", Name = "Probe check sphere " + (i + 1) };
+                    e.Position = Conversions.Point(spots[i]);
+                    e.Dimensions = Vector3.one * 0.5f;
+                    e.Properties["shape"] = "Sphere";
+                    e.Properties["color"] = new Color32(255, 255, 255, 255);
+                    e.Properties["collisionless"] = true;
+                    entities.Add(e);
+                    if (options.Screenshot) checkSpheres.Add(CheckSphere(spots[i], i + 1));
+                }
+                report.Notes.Add(spots.Length + " probe check spheres (white matte balls lit by the probes alone, 1 m above the floor) in scene.json" + (options.Screenshot ? " and in Unity's view" : ""));
+            }
 
             progress("Writing scene.json", 0.88f);
             var list = new List<object>();
@@ -164,6 +198,7 @@ namespace Darkride.Exporter
                 progress("Unity's view", 0.89f);
                 Screenshot.Write(camera, Path.Combine(localPath, "unity-view.png"), 1920, 1080, report);
             }
+            foreach (var sphere in checkSpheres) UnityEngine.Object.DestroyImmediate(sphere);
 
             var result = new ExportResult
             {
@@ -252,15 +287,47 @@ namespace Darkride.Exporter
             return e;
         }
 
-        static ExportEntity MakeZone(SceneCollector collector, string sceneName, string ambientUrl, float ambientIntensity, Report report)
+        // The zone's box (Unity frame): the exported renderers' bounds with 2 m around, at least 10 m a side
+        static Bounds ZoneBox(SceneCollector collector)
+        {
+            Bounds bounds = collector.WorldBounds ?? new Bounds(Vector3.zero, Vector3.one * 10);
+            return new Bounds(bounds.center, Vector3.Max(bounds.size + Vector3.one * 4, Vector3.one * 10));
+        }
+
+        // A white matte ball in the scene, lit by the probes alone (not static, so no lightmap), for Unity's view;
+        // not saved with the scene, destroyed after the screenshot
+        static GameObject CheckSphere(Vector3 position, int number)
+        {
+            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = "Darkride probe check sphere " + number;
+            sphere.hideFlags = HideFlags.HideAndDontSave;
+            sphere.transform.position = position;
+            sphere.transform.localScale = Vector3.one * 0.5f;
+            var collider = sphere.GetComponent<Collider>();
+            if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader != null)
+            {
+                var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                material.SetColor("_BaseColor", Color.white);
+                material.SetFloat("_Smoothness", 0.1f);
+                material.SetFloat("_Metallic", 0.0f);
+                sphere.GetComponent<MeshRenderer>().sharedMaterial = material;
+            }
+            return sphere;
+        }
+
+        static ExportEntity MakeZone(SceneCollector collector, string sceneName, string ambientUrl, float ambientIntensity, string probeVolumeUrl, Report report)
         {
             var e = new ExportEntity { Type = "Zone", Name = sceneName + " zone" };
-            Bounds bounds = collector.WorldBounds ?? new Bounds(Vector3.zero, Vector3.one * 10);
+            Bounds bounds = ZoneBox(collector);
             e.Position = Conversions.Point(bounds.center);
             e.Rotation = Quaternion.identity;
-            e.Dimensions = Vector3.Max(bounds.size + Vector3.one * 4, Vector3.one * 10);
+            e.Dimensions = bounds.size;
             var p = e.Properties;
             p["shapeType"] = "box";
+            // the probe volume rides with the zone's ambient light (userData "probeVolume", LIGHTMAPS.md step 4)
+            if (probeVolumeUrl != null) e.UserData["probeVolume"] = new Dictionary<string, object> { { "url", probeVolumeUrl }, { "intensity", 1.0f } };
 
             var sun = collector.DirectionalLights.FirstOrDefault();
             if (sun != null)

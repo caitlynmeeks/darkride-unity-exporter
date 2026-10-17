@@ -104,9 +104,11 @@ namespace Darkride.Exporter
             DarkridePrefs.ExportReflectionProbe = EditorGUILayout.Toggle(new GUIContent("Reflection probe", "Every baked reflection probe becomes a reflection probe entity; the largest is the zone's ambient map too"), DarkridePrefs.ExportReflectionProbe);
             DarkridePrefs.ExportZone = EditorGUILayout.Toggle(new GUIContent("Zone", "A Zone entity over the scene: key light, ambient map, sky colour"), DarkridePrefs.ExportZone);
             DarkridePrefs.ExportLights = EditorGUILayout.Toggle(new GUIContent("Mixed and Realtime lights", "Baked lights are in the lightmaps and are only listed"), DarkridePrefs.ExportLights);
-            using (new EditorGUI.DisabledScope(true))
+            DarkridePrefs.ExportProbeVolume = EditorGUILayout.Toggle(new GUIContent("Probe volume", "The Adaptive Probe Volume bake, resampled onto a grid over the scene (probes/ProbeVolume.bin), for the zone's ambient light on whatever has no lightmap"), DarkridePrefs.ExportProbeVolume);
+            using (new EditorGUI.DisabledScope(!DarkridePrefs.ExportProbeVolume))
             {
-                DarkridePrefs.ProbeSpacing = EditorGUILayout.FloatField(new GUIContent("Probe volume spacing (m)", "The light probe grid: not written yet (step 4)"), DarkridePrefs.ProbeSpacing);
+                DarkridePrefs.ProbeSpacing = EditorGUILayout.FloatField(new GUIContent("Probe volume spacing (m)", "The grid's spacing; the bake's minimum probe distance, or a multiple of it, keeps the baked probes exactly"), DarkridePrefs.ProbeSpacing);
+                DarkridePrefs.ProbeCheckSpheres = EditorGUILayout.Toggle(new GUIContent("Probe check spheres", "Five white matte balls 1 m above the floor, lit by the probes alone, in Unity's view and in scene.json, for comparing the volume by eye"), DarkridePrefs.ProbeCheckSpheres);
             }
 
             GUILayout.Space(10);
@@ -158,6 +160,8 @@ namespace Darkride.Exporter
                 ExportZone = DarkridePrefs.ExportZone,
                 ExportLights = DarkridePrefs.ExportLights,
                 ProbeSpacing = DarkridePrefs.ProbeSpacing,
+                ExportProbeVolume = DarkridePrefs.ExportProbeVolume,
+                ProbeCheckSpheres = DarkridePrefs.ProbeCheckSpheres,
                 Roots = selectionOnly ? Selection.gameObjects : null,
             };
             try

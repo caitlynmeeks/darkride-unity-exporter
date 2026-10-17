@@ -20,7 +20,9 @@ namespace Darkride.Exporter
         public bool ExportLights = true;       // Mixed and Realtime lights as Light entities
         public GameObject[] Roots;             // null: the whole scene; else these objects and their children
         public bool Screenshot = true;         // unity-view.png from the scene's camera, for the side by side
-        public float ProbeSpacing = 1.0f;      // the probe volume's grid spacing (step 4, not written yet)
+        public bool ExportProbeVolume = true;  // the Adaptive Probe Volume bake as the zone's probe volume (probes/ProbeVolume.bin)
+        public float ProbeSpacing = 1.0f;      // the probe volume's grid spacing in metres
+        public bool ProbeCheckSpheres = false; // five white matte balls lit by the probes alone, in Unity's view and in scene.json
 
         public static string DefaultOutputRoot()
         {
@@ -65,6 +67,8 @@ namespace Darkride.Exporter
         public static bool ExportZone { get => EditorPrefs.GetBool(PREFIX + "ExportZone", true); set => EditorPrefs.SetBool(PREFIX + "ExportZone", value); }
         public static bool ExportLights { get => EditorPrefs.GetBool(PREFIX + "ExportLights", true); set => EditorPrefs.SetBool(PREFIX + "ExportLights", value); }
         public static float ProbeSpacing { get => EditorPrefs.GetFloat(PREFIX + "ProbeSpacing", 1.0f); set => EditorPrefs.SetFloat(PREFIX + "ProbeSpacing", value); }
+        public static bool ExportProbeVolume { get => EditorPrefs.GetBool(PREFIX + "ExportProbeVolume", true); set => EditorPrefs.SetBool(PREFIX + "ExportProbeVolume", value); }
+        public static bool ProbeCheckSpheres { get => EditorPrefs.GetBool(PREFIX + "ProbeCheckSpheres", false); set => EditorPrefs.SetBool(PREFIX + "ProbeCheckSpheres", value); }
 
         public static MetaverseClient Client()
         {
