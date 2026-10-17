@@ -21,6 +21,11 @@ namespace Darkride.Exporter
 
         // Unity's lightmap scale and offset (uv2 * xy + zw, v up from the bottom) for glTF's second UV set, whose v
         // the exporter flips: (sx, sy, ox, 1 - sy - oy)
+        // A reflection probe's intensity as Unity applies it in a linear-colour-space project: through the sRGB-to-linear
+        // curve (the probe's HDR decode factor reads 0.69 for an intensity of 0.85, measured 2026-10-17 by the probe
+        // diagnostic), so the engine's probe, and the zone's ambient map made from it, get the converted value
+        public static float ProbeIntensity(float intensity) => Mathf.GammaToLinearSpace(intensity);
+
         public static Vector4 LightmapScaleOffset(Vector4 so) => new Vector4(so.x, so.y, so.z, 1 - so.y - so.w);
 
         // A linear colour as the engine's {red, green, blue} bytes (gamma encoded)

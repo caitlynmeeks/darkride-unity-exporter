@@ -132,7 +132,7 @@ namespace Darkride.Exporter
                     if (ambientUrl == null)
                     {
                         ambientUrl = url;
-                        ambientIntensity = probe.intensity;
+                        ambientIntensity = Conversions.ProbeIntensity(probe.intensity);
                     }
                     entities.Add(MakeProbe(probe, url));
                 }
@@ -279,7 +279,7 @@ namespace Darkride.Exporter
             {
                 { "url", url },
                 { "boxOffset", new List<object> { center.x, center.y, center.z } },
-                { "intensity", probe.intensity },
+                { "intensity", Conversions.ProbeIntensity(probe.intensity) },
                 { "importance", probe.importance },
                 { "blendDistance", probe.blendDistance },
                 { "boxProjection", probe.boxProjection },
