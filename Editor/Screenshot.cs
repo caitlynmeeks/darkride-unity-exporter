@@ -3,6 +3,7 @@
 
 using System.IO;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Darkride.Exporter
 {
@@ -15,6 +16,19 @@ namespace Darkride.Exporter
             foreach (var camera in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
                 if (camera.enabled && camera.gameObject.activeInHierarchy) return camera;
             return null;
+        }
+
+        // A batch-mode session's first renders ignore the baked reflection probes: the probe diagnostic of 2026-10-17
+        // (ProbeDiagnostic.cs) rendered chrome black through five renders, with the probe disabled or given a red
+        // cube map all the same, until a change to the environment reflection settings made Unity rebuild its
+        // reflection state; then the probe applied and the chrome reflected the room. So the environment is
+        // brought up to date before a picture is taken
+        public static void RefreshReflections()
+        {
+            var mode = RenderSettings.defaultReflectionMode;
+            RenderSettings.defaultReflectionMode = mode == DefaultReflectionMode.Custom ? DefaultReflectionMode.Skybox : DefaultReflectionMode.Custom;
+            RenderSettings.defaultReflectionMode = mode;
+            DynamicGI.UpdateEnvironment();
         }
 
         public static bool Write(Camera camera, string path, int width, int height, Report report)
@@ -31,7 +45,9 @@ namespace Darkride.Exporter
                 // every shader variant must be ready, else the editor draws a placeholder colour for the ones still
                 // compiling (the first batch-mode render showed flat salmon surfaces that way)
                 UnityEditor.ShaderUtil.allowAsyncCompilation = false;
+                RefreshReflections();
                 camera.targetTexture = rt;
+                camera.Render();
                 camera.Render();
                 camera.Render();
                 RenderTexture.active = rt;

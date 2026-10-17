@@ -2,7 +2,7 @@
 //   Unity -batchmode -projectPath <project> -executeMethod Darkride.Exporter.DarkrideCli.ExportScene
 //         -darkrideScene Assets/Scenes/Room.unity -darkrideOut /path/to/exports [-darkrideFolder room-test]
 //         [-darkrideUpload] [-darkrideFlat] [-darkrideProbeSpacing 1] [-darkrideNoProbeVolume]
-//         [-darkrideProbeCheckSpheres] -logFile export.log
+//         [-darkrideProbeCheckSpheres] [-darkrideProbeDiagnostic [-darkrideWatch Chrome,Green]] -logFile export.log
 // Without -darkrideUpload the folder is written locally with file: links. -darkrideUpload uses the login saved by
 // the window. Not -nographics: the reflection probe is resampled on the GPU. -darkrideProbeSpacing is the probe
 // volume grid's spacing in metres (1 by default), -darkrideNoProbeVolume leaves the probe volume out,
@@ -43,6 +43,18 @@ namespace Darkride.Exporter
                     var report = new Report();
                     Screenshot.Write(Screenshot.SceneCamera(), Path.Combine(root, "unity-view-check.png"), 1920, 1080, report);
                     Debug.Log("[darkride] " + report.Text());
+                    if (Application.isBatchMode) EditorApplication.Exit(0);
+                    return;
+                }
+                if (HasFlag("-darkrideProbeDiagnostic"))
+                {
+                    // the reflection probes as Unity applies them (ProbeDiagnostic.cs): the pipeline in force, what the
+                    // watched materials' renderers get, and the camera's view as is, box projection off, probes off
+                    string root = string.IsNullOrEmpty(options.OutputRoot) ? ExportOptions.DefaultOutputRoot() : options.OutputRoot;
+                    string diagDir = Path.Combine(root, "probe-diagnostic");
+                    Directory.CreateDirectory(diagDir);
+                    string watch = Arg("-darkrideWatch") ?? "Chrome,Green";
+                    ProbeDiagnostic.Run(diagDir, watch.Split(','));
                     if (Application.isBatchMode) EditorApplication.Exit(0);
                     return;
                 }
