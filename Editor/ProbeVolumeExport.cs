@@ -272,7 +272,10 @@ namespace Darkride.Exporter
                     for (int k = 0; k < 27; k++) acc[k] /= wsum;
                     return acc;
                 }
-                // every probe of the finest brick here is inside geometry: the next level up may see out
+                // every probe of the finest brick here is inside geometry (a grid probe in a floor or a wall): left
+                // for the dilation, which fills it from its grid neighbours in the open, as Unity's runtime reweights
+                // toward the valid probes beside such a spot; a coarser brick's probes would give the dark of the inside
+                return null;
             }
             return null;
         }
