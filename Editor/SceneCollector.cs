@@ -372,6 +372,9 @@ namespace Darkride.Exporter
                 e.Properties["exponent"] = 1.0f;
             }
             e.Properties["canCastShadow"] = light.shadows != LightShadows.None;
+            // a light casts in the engine only with its userData entry "shadows" (the Inspector's Shadows field On);
+            // Cast Shadows alone is on for every entity, so it no longer turns a light's shadows on (2026-10-21)
+            if (light.shadows != LightShadows.None) e.UserData["shadows"] = "on";
             report.Count(light.lightmapBakeType + " " + light.type.ToString().ToLowerInvariant() + " lights exported (intensity as in Unity, not yet calibrated)");
             return e;
         }
